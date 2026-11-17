@@ -7,8 +7,10 @@ workflows:
       app_store_connect: sugarloopfair
     environment:
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.sugarloopfair.game
+        provisioning_profiles:
+          - sugarloopfair_push
+        certificates:
+          - sugarloopfair
       vars:
         XCODE_PROJECT: SugarloopFair.xcodeproj
         XCODE_SCHEME: SugarloopFair
