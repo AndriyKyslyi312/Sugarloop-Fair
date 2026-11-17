@@ -1,0 +1,43 @@
+workflows:
+  sugarloopfair-app-store:
+    name: Sugarloop Fair App Store
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: sugarloopfair
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.sugarloopfair.game
+      vars:
+        XCODE_PROJECT: SugarloopFair.xcodeproj
+        XCODE_SCHEME: SugarloopFair
+        APP_STORE_APPLE_ID: "6835880583"
+      xcode: 27.1
+    scripts:
+      - name: Unpack iOS source archive
+        script: |
+          mkdir -p "$CM_BUILD_DIR/ios_src"
+          tar -xzf "$CM_BUILD_DIR/sugarloopfair-source.tar.gz" -C "$CM_BUILD_DIR/ios_src"
+      - name: Apply App Store signing profiles
+        script: |
+          cd "$CM_BUILD_DIR/ios_src"
+          xcode-project use-profiles
+      - name: Increment App Store build number
+        script: |
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+          cd "$CM_BUILD_DIR/ios_src"
+          agvtool new-version -all "$((LATEST_BUILD_NUMBER + 1))"
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/ios_src/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - ios_src/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
